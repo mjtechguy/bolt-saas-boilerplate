@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .dark {
+    /* Background colors */
+    --tw-bg-opacity: 1;
+    --color-page-background: #000000;
+    --color-card-background: #111111;
+    --color-input-background: #1a1a1a;
+    
+    /* Text colors */
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #a3a3a3;
+    
+    /* Border colors */
+    --color-border: #2a2a2a;
+  }
+
+  /* Apply the custom colors */
+  .dark body {
+    background-color: var(--color-page-background);
+  }
+
+  .dark .bg-white {
+    background-color: var(--color-card-background) !important;
+  }
+
+  .dark .bg-gray-800 {
+    background-color: var(--color-card-background) !important;
+  }
+
+  .dark .bg-gray-700 {
+    background-color: var(--color-input-background) !important;
+  }
+
+  .dark .border-gray-700 {
+    border-color: var(--color-border) !important;
+  }
+
+  .dark input,
+  .dark select,
+  .dark textarea {
+    background-color: var(--color-input-background) !important;
+    border-color: var(--color-border) !important;
+  }
+
+  .dark .divide-gray-700 > * + * {
+    border-color: var(--color-border) !important;
+  }
+}
