@@ -36,19 +36,49 @@ ON CONFLICT (key) DO UPDATE
 SET value = EXCLUDED.value;
 
 -- Create function to check if email is admin
-CREATE OR REPLACE FUNCTION is_default_admin_email(email text)
+-- CREATE OR REPLACE FUNCTION is_default_admin_email(email text)
+-- RETURNS boolean AS $$
+-- BEGIN
+--   RETURN EXISTS (
+--     SELECT 1
+--     FROM app_settings
+--     WHERE key = 'default_admin_email'
+--     AND value = email
+--   );
+-- END;
+-- $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+--updated function
+
+CREATE OR REPLACE FUNCTION public.is_default_admin_email(email varchar)
 RETURNS boolean AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1
-    FROM app_settings
+    FROM public.app_settings
     WHERE key = 'default_admin_email'
     AND value = email
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+
 -- Update handle_new_user function to use the new check
+-- CREATE OR REPLACE FUNCTION public.handle_new_user()
+-- RETURNS trigger AS $$
+-- BEGIN
+--   INSERT INTO public.profiles (id, email, is_global_admin)
+--   VALUES (
+--     new.id,
+--     new.email,
+--     is_default_admin_email(new.email)
+--   );
+--   RETURN new;
+-- END;
+-- $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+--upadted function
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
@@ -56,7 +86,7 @@ BEGIN
   VALUES (
     new.id,
     new.email,
-    is_default_admin_email(new.email)
+    public.is_default_admin_email(new.email::text)  -- Explicit cast to text
   );
   RETURN new;
 END;
