@@ -37,6 +37,19 @@ export function AuthForm({mode}: AuthFormProps) {
       return;
     }
   };
+  const getDefaultOrganizationAuth = async () => {
+    const {data: org, error} = await supabase
+      .from("organization_auth_settings")
+      .select("name");
+
+    setOrganizationAuthProvider(org);
+
+    if (error) {
+      console.error("Error fetching organization auth settings:", error);
+      return;
+    }
+  };
+  console.log(organizationAuthProvider, "provider");
   // Set default admin credentials if they exist
   useEffect(() => {
     const defaultAdminEmail = import.meta.env.VITE_DEFAULT_ADMIN_EMAIL;
@@ -64,7 +77,6 @@ export function AuthForm({mode}: AuthFormProps) {
           return;
         } else {
           setOrganizationID(organization.id);
-          console.log(organization.id, "id");
           getOrganizationAuth(organization.id);
         }
       } else {
@@ -125,7 +137,12 @@ export function AuthForm({mode}: AuthFormProps) {
   useEffect(() => {
     loadOrganizations();
   }, []);
-
+  useEffect(() => {
+    if (organizations.length === 1) {
+      getDefaultOrganizationAuth();
+    }
+  }, [organizations]);
+  console.log(organizationAuthProvider, "provider");
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -149,7 +166,8 @@ export function AuthForm({mode}: AuthFormProps) {
         </h2>
       </div>
 
-      {organizations.length === 1 ? (
+      {organizations.length === 1 || organizationID ||
+      (organizationAuthProvider && organizationAuthProvider?.length > 0) ? (
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
             <form className="space-y-6" onSubmit={handleSubmit}>
@@ -196,6 +214,18 @@ export function AuthForm({mode}: AuthFormProps) {
                   />
                 </div>
               </div>
+              {organizationAuthProvider &&
+                organizationAuthProvider.length > 0 && (
+                  <div className="mt-1">
+                    {organizationAuthProvider?.map((provider: any) => {
+                      return (
+                        <>
+                          <p>{provider.name}</p>
+                        </>
+                      );
+                    })}
+                  </div>
+                )}
 
               {error && (
                 <div className="text-red-600 dark:text-red-400 text-sm">
