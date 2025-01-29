@@ -1,18 +1,18 @@
-import React, {useState, useEffect} from "react";
-import {supabase} from "../lib/supabase";
-import {LogIn, UserPlus, Loader2} from "lucide-react";
-import {Link, useNavigate} from "react-router-dom";
-import {useTheme} from "../hooks/useTheme";
-import {useSiteSettings} from "../hooks/useSiteSettings";
+import React, { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
+import { LogIn, UserPlus, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useTheme } from "../hooks/useTheme";
+import { useSiteSettings } from "../hooks/useSiteSettings";
 
 type AuthFormProps = {
   mode: "login" | "signup";
 };
 
-export function AuthForm({mode}: AuthFormProps) {
+export function AuthForm({ mode }: AuthFormProps) {
   const navigate = useNavigate();
-  const {theme} = useTheme();
-  const {siteSettings} = useSiteSettings();
+  const { theme } = useTheme();
+  const { siteSettings } = useSiteSettings();
   const [email, setEmail] = useState("");
   const [orgName, setOrgName] = useState("");
 
@@ -26,7 +26,7 @@ export function AuthForm({mode}: AuthFormProps) {
     any[] | null
   >([]);
   const getOrganizationAuth = async (orgId: string) => {
-    const {data: org, error} = await supabase
+    const { data: org, error } = await supabase
       .from("organization_auth_settings")
       .select("name")
       .eq("organization_id", orgId);
@@ -38,7 +38,7 @@ export function AuthForm({mode}: AuthFormProps) {
     }
   };
   const getDefaultOrganizationAuth = async () => {
-    const {data: org, error} = await supabase
+    const { data: org, error } = await supabase
       .from("organization_auth_settings")
       .select("name");
 
@@ -81,7 +81,7 @@ export function AuthForm({mode}: AuthFormProps) {
         }
       } else {
         if (mode === "signup") {
-          const {error: signUpError} = await supabase.auth.signUp({
+          const { error: signUpError } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -96,7 +96,7 @@ export function AuthForm({mode}: AuthFormProps) {
 
           setSuccess("Account created successfully! You can now log in.");
         } else {
-          const {error: signInError} = await supabase.auth.signInWithPassword({
+          const { error: signInError } = await supabase.auth.signInWithPassword({
             email,
             password,
           });
@@ -157,7 +157,7 @@ export function AuthForm({mode}: AuthFormProps) {
 
   const loadOrganizations = async () => {
     try {
-      const {data: orgs, error} = await supabase
+      const { data: orgs, error } = await supabase
         .from("organizations")
         .select("id, name, slug, logo_url");
 
@@ -202,9 +202,8 @@ export function AuthForm({mode}: AuthFormProps) {
         </h2>
       </div>
 
-      {organizations.length === 1 ||
-      organizationID ||
-      (organizationAuthProvider && organizationAuthProvider?.length > 0) ? (
+      {organizations.length === 1 || organizationID ||
+        (organizationAuthProvider && organizationAuthProvider?.length > 0) ? (
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
             <form className="space-y-6" onSubmit={handleSubmit}>
@@ -251,18 +250,6 @@ export function AuthForm({mode}: AuthFormProps) {
                   />
                 </div>
               </div>
-              {organizationAuthProvider &&
-                organizationAuthProvider.length > 0 && (
-                  <div className="mt-1">
-                    {organizationAuthProvider?.map((provider: any) => {
-                      return (
-                        <>
-                          <p>{provider.name}</p>
-                        </>
-                      );
-                    })}
-                  </div>
-                )}
 
               {error && (
                 <div className="text-red-600 dark:text-red-400 text-sm">
@@ -322,6 +309,22 @@ export function AuthForm({mode}: AuthFormProps) {
                 )}
               </div>
             </form>
+
+            {organizationAuthProvider &&
+              organizationAuthProvider.length > 0 && (
+                <div className="mt-1">
+                  <p className="w-full text-center my-2">OR</p>
+                  {organizationAuthProvider?.map((provider: any) => {
+                    return (
+                      <>
+                        <div className="flex flex-col items-center">
+                          <button className="bg-indigo-600 text-white py-2 px-4 rounded-lg ">Sign in with {provider.name}</button>
+                        </div>
+                      </>
+                    );
+                  })}
+                </div>
+              )}
           </div>
         </div>
       ) : (
