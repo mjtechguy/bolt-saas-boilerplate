@@ -60,7 +60,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (signInError) throw signInError;
         
         // Redirect to dashboard after successful login
-        navigate('/');
+        navigate('/admin/dashboard');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
