@@ -1,25 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { LogIn, UserPlus, Loader2 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useTheme } from '../hooks/useTheme';
-import { useSiteSettings } from '../hooks/useSiteSettings';
+import React, {useState, useEffect} from "react";
+import {supabase} from "../lib/supabase";
+import {LogIn, UserPlus, Loader2} from "lucide-react";
+import {Link, useNavigate} from "react-router-dom";
+import {useTheme} from "../hooks/useTheme";
+import {useSiteSettings} from "../hooks/useSiteSettings";
 
 type AuthFormProps = {
-  mode: 'login' | 'signup';
+  mode: "login" | "signup";
 };
 
-export function AuthForm({ mode }: AuthFormProps) {
+export function AuthForm({mode}: AuthFormProps) {
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const { siteSettings } = useSiteSettings();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const {theme} = useTheme();
+  const {siteSettings} = useSiteSettings();
+  const [email, setEmail] = useState("");
+  const [orgName, setOrgName] = useState("");
+
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [organizations, setOrganizations] = useState<any[]>([]);
+  const [organizationID, setOrganizationID] = useState<string | null>(null);
+  const [organizationAuthProvider, setOrganizationAuthProvider] = useState<
+    any[] | null
+  >([]);
+  const getOrganizationAuth = async (orgId: string) => {
+    const {data: org, error} = await supabase
+      .from("organization_auth_settings")
+      .select("name")
+      .eq("organization_id", orgId);
+    setOrganizationAuthProvider(org);
 
+    if (error) {
+      console.error("Error fetching organization auth settings:", error);
+      return;
+    }
+  };
   // Set default admin credentials if they exist
   useEffect(() => {
     const defaultAdminEmail = import.meta.env.VITE_DEFAULT_ADMIN_EMAIL;
@@ -36,53 +53,68 @@ export function AuthForm({ mode }: AuthFormProps) {
     setLoading(true);
     setError(null);
     setSuccess(null);
-
     try {
-      if (mode === 'signup') {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              is_global_admin: email === import.meta.env.VITE_DEFAULT_ADMIN_EMAIL
-            }
-          }
-        });
+      if (organizations.length > 1) {
+        const organization = organizations.find(
+          (org) => org.name === orgName.trim()
+        );
 
-        if (signUpError) throw signUpError;
-
-        setSuccess('Account created successfully! You can now log in.');
+        if (!organization) {
+          setError("Organization not found!");
+          return;
+        } else {
+          setOrganizationID(organization.id);
+          console.log(organization.id, "id");
+          getOrganizationAuth(organization.id);
+        }
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        if (mode === "signup") {
+          const {error: signUpError} = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                is_global_admin:
+                  email === import.meta.env.VITE_DEFAULT_ADMIN_EMAIL,
+              },
+            },
+          });
 
-        if (signInError) throw signInError;
+          if (signUpError) throw signUpError;
 
-        // Redirect to dashboard after successful login
-        navigate('/admin/dashboard');
+          setSuccess("Account created successfully! You can now log in.");
+        } else {
+          const {error: signInError} = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (signInError) throw signInError;
+
+          // Redirect to dashboard after successful login
+          navigate("/admin/dashboard");
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
   };
 
   // Get the appropriate logo based on theme
-  const logoUrl = theme === 'dark' ? siteSettings?.dark_logo_url : siteSettings?.logo_url;
+  const logoUrl =
+    theme === "dark" ? siteSettings?.dark_logo_url : siteSettings?.logo_url;
 
   const loadOrganizations = async () => {
     try {
-      const { data: orgs, error } = await supabase.from("organizations")
+      const {data: orgs, error} = await supabase
+        .from("organizations")
         .select("id, name, slug, logo_url");
 
       if (error) throw error;
 
-      console.log(orgs, 'organizations');
-      setOrganizations(orgs)
-
+      setOrganizations(orgs);
     } catch (error) {
       console.error("Error loading organizations:", error);
     } finally {
@@ -106,12 +138,14 @@ export function AuthForm({ mode }: AuthFormProps) {
             />
           ) : (
             <span className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
-              {siteSettings?.site_name || 'My Application'}
+              {siteSettings?.site_name || "My Application"}
             </span>
           )}
         </Link>
         <h2 className="text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-          {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
+          {mode === "login"
+            ? "Sign in to your account"
+            : "Create a new account"}
         </h2>
       </div>
 
@@ -120,7 +154,10 @@ export function AuthForm({ mode }: AuthFormProps) {
           <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Email address
                 </label>
                 <div className="mt-1">
@@ -138,7 +175,10 @@ export function AuthForm({ mode }: AuthFormProps) {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Password
                 </label>
                 <div className="mt-1">
@@ -146,7 +186,9 @@ export function AuthForm({ mode }: AuthFormProps) {
                     id="password"
                     name="password"
                     type="password"
-                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    autoComplete={
+                      mode === "login" ? "current-password" : "new-password"
+                    }
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -175,7 +217,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 >
                   {loading ? (
                     <Loader2 className="animate-spin h-5 w-5" />
-                  ) : mode === 'login' ? (
+                  ) : mode === "login" ? (
                     <>
                       <LogIn className="h-5 w-5 mr-2" />
                       Sign in
@@ -190,17 +232,23 @@ export function AuthForm({ mode }: AuthFormProps) {
               </div>
 
               <div className="text-sm text-center">
-                {mode === 'login' ? (
+                {mode === "login" ? (
                   <p className="text-gray-600 dark:text-gray-400">
-                    Don't have an account?{' '}
-                    <Link to="/signup" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
+                    Don't have an account?{" "}
+                    <Link
+                      to="/signup"
+                      className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
+                    >
                       Sign up
                     </Link>
                   </p>
                 ) : (
                   <p className="text-gray-600 dark:text-gray-400">
-                    Already have an account?{' '}
-                    <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
+                    Already have an account?{" "}
+                    <Link
+                      to="/login"
+                      className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
+                    >
                       Sign in
                     </Link>
                   </p>
@@ -210,11 +258,59 @@ export function AuthForm({ mode }: AuthFormProps) {
           </div>
         </div>
       ) : (
-        <div>
-          Show Organizations
+        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Enter Organization Name
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="orgName"
+                    name="orgName"
+                    type="text"
+                    placeholder="Organization Name"
+                    // autoComplete="email"
+                    required
+                    value={orgName}
+                    onChange={(e) => setOrgName(e.target.value)}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="text-red-600 dark:text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {success && (
+                <div className="text-green-600 dark:text-green-400 text-sm">
+                  {success}
+                </div>
+              )}
+
+              <div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                >
+                  <>
+                    <LogIn className="h-5 w-5 mr-2" />
+                    Continue
+                  </>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      )
-      }
+      )}
     </div>
   );
 }
