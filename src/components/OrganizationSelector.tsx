@@ -21,7 +21,7 @@ export function OrganizationSelector({
 
   useEffect(() => {
     loadOrganizations();
-  }, [currentOrganizationId]);
+  }, [currentOrganizationId, profile]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -38,50 +38,58 @@ export function OrganizationSelector({
   }, []);
 
   const loadOrganizations = async () => {
+    console.log(profile, 'user profile');
     const is_admin = profile?.is_global_admin;
+  
+    // Retrieve organization_id from localStorage
+    const organizationIdFromLocalStorage = localStorage.getItem("organization_id");
+  
     try {
-      if (is_admin == false) {
-        const { data: userOrgs, error } = await supabase.from(
-          "user_organizations"
-        ).select(`
-          organization:organizations (
-            id,
-            name,
-            slug,
-            logo_url
-          )
-        `);
-
+      let orgs;
+  
+      if (!is_admin) {
+        console.log('if not admin true')
+        const { data: userOrgs, error } = await supabase
+          .from("user_organizations")
+          .select(`
+            organization:organizations (
+              id,
+              name,
+              slug,
+              logo_url
+            )
+          `)
+  
         if (error) throw error;
-
-        const orgs = userOrgs
+  
+        // Find the organization that matches the organization_id in localStorage
+        const matchingOrg = userOrgs
+          .map((uo) => uo.organization)
+          .find((org): org is Organization => org !== null && org.id === organizationIdFromLocalStorage);
+  
+        // If a matching organization is found, use it; otherwise, use all organizations
+        orgs = matchingOrg ? [matchingOrg] : userOrgs
           .map((uo) => uo.organization)
           .filter((org): org is Organization => org !== null)
           .sort((a, b) => a.name.localeCompare(b.name));
-
-        setOrganizations(orgs);
-
-        // If no current organization is selected and we have multiple orgs, show selector
-        if (!currentOrganizationId && orgs.length > 1) {
-          setIsOpen(true);
-        }
       } else {
+        console.log('if admin true')
         const { data: userOrgs, error } = await supabase
           .from("organizations")
           .select("id, name, slug, logo_url");
-
+  
         if (error) throw error;
-
-        const orgs = userOrgs
+  
+        orgs = userOrgs
           ?.filter((org): org is Organization => org !== null) // Ensure no null values
           .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically by name
-
-        setOrganizations(orgs);
-
-        // If no current organization is selected and we have multiple orgs, show selector
-        if (!currentOrganizationId && orgs.length > 1) {
-          setIsOpen(true);
-        }
+      }
+  
+      setOrganizations(orgs);
+  
+      // If no current organization is selected and we have multiple orgs, show selector
+      if (!currentOrganizationId && orgs.length > 1) {
+        setIsOpen(true);
       }
     } catch (error) {
       console.error("Error loading organizations:", error);
