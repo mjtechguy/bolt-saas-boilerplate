@@ -25,10 +25,11 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [organizationAuthProvider, setOrganizationAuthProvider] = useState<
     any[] | null
   >([]);
+
   const getOrganizationAuth = async (orgId: string) => {
     const { data: org, error } = await supabase
       .from("organization_auth_settings")
-      .select("name")
+      .select("client_id, client_secret, authorization_endpoint, token_endpoint, userinfo_endpoint, provider, name")
       .eq("organization_id", orgId);
     setOrganizationAuthProvider(org);
 
@@ -37,10 +38,11 @@ export function AuthForm({ mode }: AuthFormProps) {
       return;
     }
   };
+
   const getDefaultOrganizationAuth = async () => {
     const { data: org, error } = await supabase
       .from("organization_auth_settings")
-      .select("name");
+      .select("client_id, client_secret, authorization_endpoint, token_endpoint, userinfo_endpoint, provider, name")
 
     setOrganizationAuthProvider(org);
 
@@ -77,6 +79,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           return;
         } else {
           setOrganizationID(organization.id);
+          localStorage.setItem("organization_id", organization.id);
           getOrganizationAuth(organization.id);
         }
       } else {
@@ -113,6 +116,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       setLoading(false);
     }
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -171,6 +175,42 @@ export function AuthForm({ mode }: AuthFormProps) {
     }
   };
 
+  const handleLogin = async (authSettings: { provider: any; name: any; client_id: any; client_secret: any; authorization_endpoint: any; token_endpoint: any; userinfo_endpoint: any; }) => {
+    try {
+      const { provider, name, client_id, client_secret, authorization_endpoint, token_endpoint, userinfo_endpoint } = authSettings;
+      console.log(authSettings, 'auth provider from settings')
+  
+      // Determine the provider type (OAuth or OpenID)
+      const isOpenID = provider === 'openid';
+  
+      // Perform OAuth/OpenID login with the organization's credentials
+      const { data, error: authError } = await supabase.auth.signInWithOAuth({
+        provider: isOpenID ? 'custom' : name.toLowerCase(), // Use 'custom' for OpenID
+        options: {
+          // redirectTo: 'https://yourapp.com/callback',
+          scopes: 'email profile',
+          queryParams: {
+            client_id: client_id,
+            // client_secret: client_secret,
+          },
+          endpoints: isOpenID ? {
+            authorization: authorization_endpoint,
+            token: token_endpoint,
+            userInfo: userinfo_endpoint,
+          } : undefined,
+        },
+      });
+  
+      if (authError) {
+        throw authError;
+      }
+  
+      console.log('Login successful:', data);
+    } catch (error) {
+      console.error('Error during login:', error.message);
+    }
+  };
+
   useEffect(() => {
     loadOrganizations();
   }, []);
@@ -179,6 +219,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       getDefaultOrganizationAuth();
     }
   }, [organizations]);
+  
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -314,11 +355,15 @@ export function AuthForm({ mode }: AuthFormProps) {
               organizationAuthProvider.length > 0 && (
                 <div className="mt-1">
                   <p className="w-full text-center my-2">OR</p>
-                  {organizationAuthProvider?.map((provider: any) => {
+                  {organizationAuthProvider?.map((authSettings: any) => {
                     return (
                       <>
-                        <div className="flex flex-col items-center">
-                          <button className="bg-indigo-600 text-white py-2 px-4 rounded-lg ">Sign in with {provider.name}</button>
+                        <div key={authSettings.name} className="flex flex-col items-center">
+                          <button className="bg-indigo-600 text-white py-2 px-4 rounded-lg"
+                            onClick={() => handleLogin(authSettings)}
+                          >
+                            Sign in with {authSettings.name}
+                          </button>
                         </div>
                       </>
                     );
