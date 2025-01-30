@@ -96,6 +96,7 @@ export function TopBar({ toggleSidebar }: { toggleSidebar: () => void }) {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      localStorage.clear();
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Error signing out:', error);
