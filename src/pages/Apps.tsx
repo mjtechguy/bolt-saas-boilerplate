@@ -107,7 +107,8 @@ export function Apps() {
       const { error: updateError } = await supabase
         .from('organization_apps')
         .update({ enabled: !app.enabled })
-        .eq('id', app.id);
+        .eq('id', app.id)
+        .eq('organization_id', orgId);
 
       if (updateError) throw updateError;
 
