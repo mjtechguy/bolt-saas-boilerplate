@@ -4,7 +4,7 @@ import { useProfile } from './useProfile';
 
 export function useOrganization() {
   const [currentOrganizationId, setCurrentOrganizationId] = useState<string | null>(() => {
-    return localStorage.getItem('currentOrganizationId');
+    return localStorage.getItem('organization_id');
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,12 +44,12 @@ export function useOrganization() {
       }
 
       // Get saved org ID from localStorage
-      const savedOrgId = localStorage.getItem('currentOrganizationId');
+      const savedOrgId = localStorage.getItem('organization_id');
 
       // If user has exactly one organization, select it
       if (orgs.length === 1) {
         setCurrentOrganizationId(orgs[0].id);
-        localStorage.setItem('currentOrganizationId', orgs[0].id);
+        localStorage.setItem('organization_id', orgs[0].id);
       }
       // If user has multiple organizations and has a valid saved selection, use it
       else if (savedOrgId && orgs.some(org => org.id === savedOrgId)) {
@@ -58,7 +58,7 @@ export function useOrganization() {
       // Otherwise, select the first organization
       else {
         setCurrentOrganizationId(orgs[0].id);
-        localStorage.setItem('currentOrganizationId', orgs[0].id);
+        localStorage.setItem('organization_id', orgs[0].id);
       }
     } catch (error) {
       console.error('Error loading organizations:', error);
@@ -101,7 +101,7 @@ export function useOrganization() {
 
       // Set the current organization ID and store it in localStorage
       setCurrentOrganizationId(organizationId);
-      localStorage.setItem('currentOrganizationId', organizationId);
+      localStorage.setItem('organization_id', organizationId);
 
     } catch (error) {
       console.error('Error changing organization:', error);

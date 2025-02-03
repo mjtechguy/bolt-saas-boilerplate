@@ -53,21 +53,53 @@ export function AIChat() {
 
   const loadMessages = async () => {
     if (!currentOrganizationId) return;
-    
+
+
+
+    // try {
+    //   setLoading(true);
+    //   setError(null);
+
+    //   const { data, error: loadError } = await supabase
+    //     .from('chat_messages')
+    //     .select('*')
+    //     .eq('organization_id', currentOrganizationId)
+    //     .order('created_at', { ascending: true });
+
+    //   if (loadError) throw loadError;
+    //   setMessages(data || []);
+    // } catch (err) {
+    //   console.error('Error loading messages:', err);
+    //   setError('Failed to load chat history');
+    // } finally {
+    //   setLoading(false);
+    // }
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error: loadError } = await supabase
+      // Determine the organization ID based on the user's role
+      const organizationId = profile?.is_global_admin
+        ? currentOrganizationId // Use currentOrganizationId for global admins
+        : localStorage.getItem('organization_id'); // Use localStorage for non-admins
+
+      console.log("organization id from ai chats:", organizationId)
+
+      if (!organizationId) {
+        throw new Error('Organization ID not found');
+      }
+
+      // Fetch messages for the determined organization ID
+      const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
-        .eq('organization_id', currentOrganizationId)
+        .eq('organization_id', organizationId) // Use the determined organization ID
         .order('created_at', { ascending: true });
 
-      if (loadError) throw loadError;
+      if (error) throw error;
       setMessages(data || []);
-    } catch (err) {
-      console.error('Error loading messages:', err);
+    } catch (error) {
+      console.error('Error loading messages:', error);
       setError('Failed to load chat history');
     } finally {
       setLoading(false);
@@ -76,7 +108,7 @@ export function AIChat() {
 
   const loadSettings = async () => {
     if (!currentOrganizationId) return;
-    
+
     try {
       const { data: apps, error: appsError } = await supabase
         .from('organization_apps')
@@ -168,12 +200,12 @@ export function AIChat() {
         // Convert the chunk to text and handle SSE format
         const chunk = new TextDecoder().decode(value);
         const lines = chunk.split('\n');
-        
+
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(5);
             if (data === '[DONE]') continue;
-            
+
             try {
               const parsed = JSON.parse(data);
               const content = parsed.choices[0]?.delta?.content || '';
@@ -312,7 +344,7 @@ export function AIChat() {
         </div>
       )}
 
-      <div 
+      <div
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-8 scroll-smooth"
       >
@@ -327,9 +359,8 @@ export function AIChat() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex items-start space-x-3 ${
-                  message.role === 'assistant' ? 'justify-start' : 'justify-end'
-                }`}
+                className={`flex items-start space-x-3 ${message.role === 'assistant' ? 'justify-start' : 'justify-end'
+                  }`}
               >
                 {message.role === 'assistant' && (
                   <div className="flex-shrink-0">
@@ -339,17 +370,15 @@ export function AIChat() {
                   </div>
                 )}
                 <div
-                  className={`flex-1 max-w-2xl ${
-                    message.role === 'assistant'
+                  className={`flex-1 max-w-2xl ${message.role === 'assistant'
                       ? 'text-gray-900 dark:text-white'
                       : 'text-white ml-auto'
-                  }`}
+                    }`}
                 >
-                  <div className={`relative rounded-2xl px-4 py-2 mb-8 ${
-                    message.role === 'assistant'
+                  <div className={`relative rounded-2xl px-4 py-2 mb-8 ${message.role === 'assistant'
                       ? 'bg-white dark:bg-gray-800'
                       : 'bg-indigo-600'
-                  }`}>
+                    }`}>
                     <div className="text-sm">
                       {renderMessage(message.content, message.role === 'assistant', message.id)}
                     </div>
