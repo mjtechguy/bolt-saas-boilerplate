@@ -44,7 +44,6 @@ export function UserOrganization() {
         .from("organizations")
         .select("*")
         .eq("id", orgId);
-      // .single();
       if (error) throw error;
 
       setOrganizations(data || []);

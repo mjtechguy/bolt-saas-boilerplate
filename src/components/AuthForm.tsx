@@ -179,10 +179,10 @@ export function AuthForm({ mode }: AuthFormProps) {
     try {
       const { provider, name, client_id, client_secret, authorization_endpoint, token_endpoint, userinfo_endpoint } = authSettings;
       console.log(authSettings, 'auth provider from settings')
-  
+
       // Determine the provider type (OAuth or OpenID)
       const isOpenID = provider === 'openid';
-  
+
       // Perform OAuth/OpenID login with the organization's credentials
       const { data, error: authError } = await supabase.auth.signInWithOAuth({
         provider: isOpenID ? 'custom' : name.toLowerCase(), // Use 'custom' for OpenID
@@ -200,11 +200,11 @@ export function AuthForm({ mode }: AuthFormProps) {
           } : undefined,
         },
       });
-  
+
       if (authError) {
         throw authError;
       }
-  
+
       console.log('Login successful:', data);
     } catch (error) {
       console.error('Error during login:', error.message);
@@ -219,7 +219,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       getDefaultOrganizationAuth();
     }
   }, [organizations]);
-  
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -243,7 +243,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         </h2>
       </div>
 
-      {organizations.length === 1 || organizationID ||
+      {organizations.length === 1 || organizationID ||  mode==='signup'||
         (organizationAuthProvider && organizationAuthProvider?.length > 0) ? (
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
@@ -423,6 +423,19 @@ export function AuthForm({ mode }: AuthFormProps) {
                   </>
                 </button>
               </div>
+              <div className="text-sm text-center">
+                {mode === "login" && (
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Don't have an account?{" "}
+                    <Link
+                      to="/signup"
+                      className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
+                    >
+                      Sign up
+                    </Link>
+                  </p>
+                )}
+                  </div>
             </form>
           </div>
         </div>
