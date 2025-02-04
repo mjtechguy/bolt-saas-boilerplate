@@ -11,14 +11,69 @@ export function useOrganization() {
   const { profile } = useProfile();
 
   useEffect(() => {
-    loadUserOrganizations();
-  }, []);  // Runs only once when the component mounts
+      loadUserOrganizations();
+  }, [profile]);
+
+  // const loadUserOrganizations = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+
+  //     // Fetch user's organizations from Supabase
+  //     const { data: userOrgs, error: orgsError } = await supabase
+  //       .from('user_organizations')
+  //       .select(`
+  //         organization:organizations (
+  //           id,
+  //           name,
+  //           slug,
+  //           logo_url
+  //         )
+  //       `);
+
+  //     if (orgsError) throw orgsError;
+
+  //     // Filter out null organizations and get unique ones
+  //     const orgs = userOrgs
+  //       .map(uo => uo.organization)
+  //       .filter((org): org is NonNullable<typeof org> => org !== null);
+
+  //     if (orgs.length === 0) {
+  //       // If user has no organizations, wait for the default org trigger to handle it
+  //       return;
+  //     }
+
+  //     // Get saved org ID from localStorage
+  //     const savedOrgId = localStorage.getItem('organization_id');
+
+  //     // If user has exactly one organization, select it
+  //     if (orgs.length === 1) {
+  //       setCurrentOrganizationId(orgs[0].id);
+  //       localStorage.setItem('organization_id', orgs[0].id);
+  //     }
+  //     // If user has multiple organizations and has a valid saved selection, use it
+  //     else if (savedOrgId && orgs.some(org => org.id === savedOrgId)) {
+  //       setCurrentOrganizationId(savedOrgId);
+  //     }
+  //     // Otherwise, select the first organization
+  //     else {
+  //       setCurrentOrganizationId(orgs[0].id);
+  //       localStorage.setItem('organization_id', orgs[0].id);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error loading organizations:', error);
+  //     setError('Failed to load organizations');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const loadUserOrganizations = async () => {
+    console.log(profile, 'profile from useOrganization')
     try {
       setLoading(true);
       setError(null);
-
+  
       // Fetch user's organizations from Supabase
       const { data: userOrgs, error: orgsError } = await supabase
         .from('user_organizations')
@@ -28,37 +83,52 @@ export function useOrganization() {
             name,
             slug,
             logo_url
-          )
+          ),
+          role
         `);
-
+  
       if (orgsError) throw orgsError;
-
+  
       // Filter out null organizations and get unique ones
       const orgs = userOrgs
-        .map(uo => uo.organization)
+        .map(uo => ({
+          ...uo.organization, // Spread the organization data
+          role: uo.role, // Include the role from user_organizations
+        }))
         .filter((org): org is NonNullable<typeof org> => org !== null);
-
+  
       if (orgs.length === 0) {
         // If user has no organizations, wait for the default org trigger to handle it
         return;
       }
-
+  
       // Get saved org ID from localStorage
       const savedOrgId = localStorage.getItem('organization_id');
-
-      // If user has exactly one organization, select it
-      if (orgs.length === 1) {
-        setCurrentOrganizationId(orgs[0].id);
-        localStorage.setItem('organization_id', orgs[0].id);
-      }
-      // If user has multiple organizations and has a valid saved selection, use it
-      else if (savedOrgId && orgs.some(org => org.id === savedOrgId)) {
-        setCurrentOrganizationId(savedOrgId);
-      }
-      // Otherwise, select the first organization
-      else {
-        setCurrentOrganizationId(orgs[0].id);
-        localStorage.setItem('organization_id', orgs[0].id);
+  
+      // Check if the user is a global admin
+      if (profile?.is_global_admin) {
+        // If the user is a global admin, set the role to 'admin'
+        console.log('true admin')
+        localStorage.setItem('userOrgRole', 'admin');
+      } else {
+        // If user has exactly one organization, select it
+        if (orgs.length === 1) {
+          setCurrentOrganizationId(orgs[0].id);
+          localStorage.setItem('organization_id', orgs[0].id);
+          localStorage.setItem('userOrgRole', orgs[0].role); // Save the role to localStorage
+        }
+        // If user has multiple organizations and has a valid saved selection, use it
+        else if (savedOrgId && orgs.some(org => org.id === savedOrgId)) {
+          const selectedOrg = orgs.find(org => org.id === savedOrgId);
+          setCurrentOrganizationId(savedOrgId);
+          localStorage.setItem('userOrgRole', selectedOrg?.role || ''); // Save the role to localStorage
+        }
+        // Otherwise, select the first organization
+        else {
+          setCurrentOrganizationId(orgs[0].id);
+          localStorage.setItem('organization_id', orgs[0].id);
+          localStorage.setItem('userOrgRole', orgs[0].role); // Save the role to localStorage
+        }
       }
     } catch (error) {
       console.error('Error loading organizations:', error);
