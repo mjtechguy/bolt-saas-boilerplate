@@ -139,14 +139,52 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         setSuccess("Account created successfully! You can now log in.");
       } else {
-        const {error: signInError} = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-
+  
         if (signInError) throw signInError;
-
-        // Redirect to dashboard after successful login
+  
+        // Step 2: Fetch the user's profile to check if they are a global admin
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+  
+        if (userError || !user) throw new Error("Failed to fetch user details.");
+  
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+  
+        if (profileError) throw profileError;
+  
+        const isGlobalAdmin = profile.is_global_admin;
+  
+        if (!isGlobalAdmin) {
+          // Step 3: For non-global admins, check if the user is part of the organization
+          const organizationId = localStorage.getItem("organization_id");
+  
+          if (!organizationId) {
+            throw new Error("Organization ID not found in localStorage.");
+          }
+  
+          // Fetch the user's organizations from the user_organizations table
+          const { data: userOrgs, error: orgError } = await supabase
+            .from("user_organizations")
+            .select("user_id, organization_id")
+            .eq("user_id", user.id)
+            .eq("organization_id", organizationId);
+  
+          if (orgError) throw orgError;
+  
+          // If the user is not part of the organization, throw an error
+          if (!userOrgs || userOrgs.length === 0) {
+            throw new Error("You are not part of this organization.");
+          }
+        }
+  
+        // Step 4: Redirect to the dashboard after successful login
         navigate("/admin/dashboard");
       }
     } catch (err) {
