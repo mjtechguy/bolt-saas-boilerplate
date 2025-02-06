@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {NavLink} from "react-router-dom";
 import {
   Building2,
@@ -14,6 +14,7 @@ import {
 import {useProfile} from "../hooks/useProfile";
 import {OrganizationSelector} from "./OrganizationSelector";
 import {useOrganization} from "../hooks/useOrganization";
+import {supabase} from "../lib/supabase";
 
 export function Sidebar({
   isOpen,
@@ -23,11 +24,35 @@ export function Sidebar({
   onClose: () => void;
 }) {
   const {profile} = useProfile();
+  const [orgs, setOrgs] = useState<boolean>(false);
+
   const {currentOrganizationId, changeOrganization} = useOrganization();
-  const userRole = (localStorage.getItem("userOrgRole"));
+  const userRole = localStorage.getItem("userOrgRole");
 
-  console.log(userRole, "role");
+  const getUserOrganization = async () => {
+    const organizationId = localStorage.getItem("organization_id");
+    const {data, error: orgError} = await supabase
+      .from("user_organizations")
+      .select("user_id, organization_id")
+      .eq("user_id", profile?.id)
+      .eq("organization_id", organizationId);
 
+    if (orgError) throw orgError;
+
+    // If the user is not part of the organization, throw an error
+    if (!data || data.length === 0) {
+      setOrgs(false);
+
+      throw new Error("You are not part of this organization.");
+    } else if (data.length > 0) {
+      setOrgs(true);
+    }
+  };
+  useEffect(() => {
+    if (profile && profile.is_global_admin === false) {
+      getUserOrganization();
+    }
+  }, [profile]);
   const adminNavigation = [
     {name: "Admin Dashboard", href: "/admin/dashboard", icon: LayoutDashboard},
     {name: "Organizations", href: "/organizations", icon: Building2},
@@ -58,91 +83,55 @@ export function Sidebar({
     {name: "Teams", href: "/user-teams", icon: Users},
   ];
   const navigation =
-  userRole === "organization_admin"
-    ? organizationNavigation
-    : userRole === "team_admin"
-    ? teamNavigation
-    : userNavigation;
-
+    userRole === "organization_admin"
+      ? organizationNavigation
+      : userRole === "team_admin"
+      ? teamNavigation
+      : userNavigation;
 
   return (
     <>
-      {/* Backdrop for mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-
-      <div
-        className={`
-          fixed inset-y-0 left-0 z-40 w-64 transform bg-white dark:bg-gray-800 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        `}
-      >
-        <div className="h-full flex flex-col border-r border-gray-200 dark:border-gray-700">
-          {/* Organization Selector */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <OrganizationSelector
-              currentOrganizationId={currentOrganizationId}
-              onOrganizationChange={changeOrganization}
+      {/* Only render sidebar if the user has organizations */}
+      {orgs === true || profile?.is_global_admin === true ? (
+        <>
+          {/* Backdrop for mobile */}
+          {isOpen && (
+            <div
+              className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
+              onClick={onClose}
             />
-          </div>
+          )}
 
-          {/* Navigation */}
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-            {/* User Navigation */}
-            {navigation.map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.href}
-                className={({isActive}) => `
-                  group flex items-center px-3 py-2 text-sm font-medium rounded-md
-                  ${
-                    isActive
-                      ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
-                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }
-                `}
-              >
-                <item.icon
-                  className="mr-3 h-5 w-5 flex-shrink-0 text-gray-400 dark:text-gray-500"
-                  aria-hidden="true"
+          <div
+            className={`
+                fixed inset-y-0 left-0 z-40 w-64 transform bg-white dark:bg-gray-800 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0
+                ${isOpen ? "translate-x-0" : "-translate-x-full"}
+              `}
+          >
+            <div className="h-full flex flex-col border-r border-gray-200 dark:border-gray-700">
+              {/* Organization Selector */}
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <OrganizationSelector
+                  currentOrganizationId={currentOrganizationId}
+                  onOrganizationChange={changeOrganization}
                 />
-                {item.name}
-              </NavLink>
-            ))}
+              </div>
 
-            {/* Admin Navigation */}
-            {profile?.is_global_admin && (
-              <>
-                <div className="relative mb-4">
-                  <div
-                    className="absolute inset-0 flex items-center"
-                    aria-hidden="true"
-                  >
-                    <div className="w-full border-t border-gray-200 dark:border-gray-700" />
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="bg-white dark:bg-gray-800 px-2 text-sm text-gray-500 dark:text-gray-400">
-                      Admin
-                    </span>
-                  </div>
-                </div>
-
-                {adminNavigation.map((item) => (
+              {/* Navigation */}
+              <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+                {/* User Navigation */}
+                {navigation.map((item) => (
                   <NavLink
                     key={item.name}
                     to={item.href}
                     className={({isActive}) => `
-                      group flex items-center px-3 py-2 text-sm font-medium rounded-md
-                      ${
-                        isActive
-                          ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                      }
-                    `}
+                        group flex items-center px-3 py-2 text-sm font-medium rounded-md
+                        ${
+                          isActive
+                            ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        }
+                      `}
                   >
                     <item.icon
                       className="mr-3 h-5 w-5 flex-shrink-0 text-gray-400 dark:text-gray-500"
@@ -151,11 +140,51 @@ export function Sidebar({
                     {item.name}
                   </NavLink>
                 ))}
-              </>
-            )}
-          </nav>
-        </div>
-      </div>
+
+                {/* Admin Navigation */}
+                {profile?.is_global_admin && (
+                  <>
+                    <div className="relative mb-4">
+                      <div
+                        className="absolute inset-0 flex items-center"
+                        aria-hidden="true"
+                      >
+                        <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+                      </div>
+                      <div className="relative flex justify-center">
+                        <span className="bg-white dark:bg-gray-800 px-2 text-sm text-gray-500 dark:text-gray-400">
+                          Admin
+                        </span>
+                      </div>
+                    </div>
+
+                    {adminNavigation.map((item) => (
+                      <NavLink
+                        key={item.name}
+                        to={item.href}
+                        className={({isActive}) => `
+                            group flex items-center px-3 py-2 text-sm font-medium rounded-md
+                            ${
+                              isActive
+                                ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
+                                : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                            }
+                          `}
+                      >
+                        <item.icon
+                          className="mr-3 h-5 w-5 flex-shrink-0 text-gray-400 dark:text-gray-500"
+                          aria-hidden="true"
+                        />
+                        {item.name}
+                      </NavLink>
+                    ))}
+                  </>
+                )}
+              </nav>
+            </div>
+          </div>
+        </>
+      ) : null}
     </>
   );
 }
