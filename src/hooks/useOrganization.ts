@@ -73,7 +73,7 @@ export function useOrganization() {
     try {
       setLoading(true);
       setError(null);
-  
+
       // Fetch user's organizations from Supabase
       const { data: userOrgs, error: orgsError } = await supabase
         .from('user_organizations')
@@ -86,9 +86,9 @@ export function useOrganization() {
           ),
           role
         `);
-  
+
       if (orgsError) throw orgsError;
-  
+
       // Filter out null organizations and get unique ones
       const orgs = userOrgs
         .map(uo => ({
@@ -96,15 +96,15 @@ export function useOrganization() {
           role: uo.role, // Include the role from user_organizations
         }))
         .filter((org): org is NonNullable<typeof org> => org !== null);
-  
+
       if (orgs.length === 0) {
         // If user has no organizations, wait for the default org trigger to handle it
         return;
       }
-  
+
       // Get saved org ID from localStorage
       const savedOrgId = localStorage.getItem('organization_id');
-  
+
       // Check if the user is a global admin
       if (profile?.is_global_admin) {
         // If the user is a global admin, set the role to 'admin'
@@ -112,7 +112,7 @@ export function useOrganization() {
         localStorage.setItem('userOrgRole', 'admin');
       } else {
         // If user has exactly one organization, select it
-        if (orgs.length === 1) {
+        if (orgs.length === 1  && savedOrgId===orgs[0].id) {
           setCurrentOrganizationId(orgs[0].id);
           localStorage.setItem('organization_id', orgs[0].id);
           localStorage.setItem('userOrgRole', orgs[0].role); // Save the role to localStorage
@@ -125,9 +125,12 @@ export function useOrganization() {
         }
         // Otherwise, select the first organization
         else {
-          setCurrentOrganizationId(orgs[0].id);
-          localStorage.setItem('organization_id', orgs[0].id);
-          localStorage.setItem('userOrgRole', orgs[0].role); // Save the role to localStorage
+          // setCurrentOrganizationId(orgs[0].id);
+          // localStorage.setItem('organization_id', orgs[0].id);
+          // localStorage.setItem('userOrgRole', orgs[0].role);
+           setCurrentOrganizationId('');
+          localStorage.setItem('organization_id', '');
+          localStorage.setItem('userOrgRole', ''); // Save the role to localStorage
         }
       }
     } catch (error) {
