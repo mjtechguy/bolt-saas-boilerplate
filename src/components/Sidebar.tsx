@@ -88,7 +88,6 @@ export function Sidebar({
       : userRole === "team_admin"
       ? teamNavigation
       : userNavigation;
-  console.log(orgs, "orgs");
 
   return (
     <>

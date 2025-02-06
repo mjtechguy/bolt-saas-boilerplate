@@ -122,18 +122,21 @@ export function Dashboard() {
     );
   }
 
-  if (!orgs && profile?.is_global_admin === false) {
-    return (
-      <div className="flex items-center justify-center mt-12">
-        <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 max-w-lg text-center">
-          <p className="text-gray-600 dark:text-gray-300">
-            You are not part of this organization. Please contact the
-            administrator for access.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // if (!orgs && profile?.is_global_admin === false) {
+  //   return (
+  //     <div className="flex items-center justify-center mt-12">
+  //     <div className="bg-red-100 dark:bg-red-900 shadow-xl rounded-2xl p-8 max-w-lg text-center">
+  //       <p className="text-red-700 dark:text-red-300 font-semibold text-lg">
+  //         You are not part of this organization.
+  //       </p>
+  //       <p className="text-gray-700 dark:text-gray-300 mt-2">
+  //         Please contact the administrator for access.
+  //       </p>
+  //     </div>
+  //   </div>
+
+  //   );
+  // }
   return (
     <>
       <div className="space-y-6">
