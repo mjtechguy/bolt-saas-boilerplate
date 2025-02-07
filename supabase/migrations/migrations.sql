@@ -304,39 +304,51 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- Recreate the function with better error handling
+-- CREATE OR REPLACE FUNCTION public.handle_new_user()
+-- RETURNS trigger AS $$
+-- DECLARE
+--   default_admin_email text;
+-- BEGIN
+--   -- Get default admin email from environment variable
+--   default_admin_email := current_setting('app.settings.default_admin_email', true);
+
+--   -- Ensure we don't create duplicate profiles
+--   IF NOT EXISTS (
+--     SELECT 1 FROM public.profiles WHERE id = new.id
+--   ) THEN
+--     INSERT INTO public.profiles (
+--       id,
+--       email,
+--       display_name,
+--       is_global_admin,
+--       created_at,
+--       updated_at
+--     )
+--     VALUES (
+--       new.id,
+--       new.email,
+--       SPLIT_PART(new.email, '@', 1),
+--       CASE
+--         WHEN new.email = default_admin_email THEN true
+--         ELSE false
+--       END,
+--       now(),
+--       now()
+--     );
+--   END IF;
+
+--   RETURN new;
+-- END;
+-- $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
-DECLARE
-  default_admin_email text;
 BEGIN
-  -- Get default admin email from environment variable
-  default_admin_email := current_setting('app.settings.default_admin_email', true);
-
-  -- Ensure we don't create duplicate profiles
-  IF NOT EXISTS (
-    SELECT 1 FROM public.profiles WHERE id = new.id
-  ) THEN
-    INSERT INTO public.profiles (
-      id,
-      email,
-      display_name,
-      is_global_admin,
-      created_at,
-      updated_at
-    )
-    VALUES (
-      new.id,
-      new.email,
-      SPLIT_PART(new.email, '@', 1),
-      CASE
-        WHEN new.email = default_admin_email THEN true
-        ELSE false
-      END,
-      now(),
-      now()
-    );
-  END IF;
-
+  INSERT INTO public.profiles (id, email, is_global_admin)
+  VALUES (
+    new.id,
+    new.email,
+    public.is_default_admin_email(new.email::text)  -- Explicit cast to text
+  );
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -1031,7 +1043,26 @@ CREATE POLICY "Only global admins can manage logos"
       AND is_global_admin = true
     )
   );
+UPDATE profiles
+SET display_name = SPLIT_PART(email, '@', 1)
+WHERE display_name IS NULL;
+UPDATE profiles
+SET last_sign_in_at = users.last_sign_in_at
+FROM auth.users
+WHERE profiles.id = users.id;
 
-
+CREATE OR REPLACE FUNCTION public.handle_user_sign_in()
+RETURNS trigger AS $$
+BEGIN
+  UPDATE public.profiles
+  SET last_sign_in_at = now()
+  WHERE id = new.id;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+CREATE TRIGGER on_auth_user_sign_in
+  AFTER UPDATE OF last_sign_in_at ON auth.users
+  FOR EACH ROW
+  WHEN (OLD.last_sign_in_at IS DISTINCT FROM NEW.last_sign_in_at)
+  EXECUTE FUNCTION public.handle_user_sign_in();
   -- UNIQUE INDEXES
-CREATE UNIQUE INDEX IF NOT EXISTS users_email_key ON auth.users (email);
