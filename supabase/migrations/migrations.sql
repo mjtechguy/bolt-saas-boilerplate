@@ -147,6 +147,7 @@ CREATE TABLE IF NOT EXISTS site_settings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   site_name text NOT NULL DEFAULT 'My Application',
   logo_url text,
+  dark_logo_url text,
   primary_color text DEFAULT '#4F46E5',
   secondary_color text DEFAULT '#6366F1',
   created_at timestamptz DEFAULT now(),
