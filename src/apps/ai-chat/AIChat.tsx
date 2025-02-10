@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Bot, AlertCircle, Loader2, Send, User, Copy, Check } from 'lucide-react';
 import { useProfile } from '../../hooks/useProfile';
@@ -6,6 +6,8 @@ import { useOrganization } from '../../hooks/useOrganization';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { loadStripe } from '@stripe/stripe-js';
+import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from "@supabase/supabase-js";
 
 interface ChatMessage {
   id: string;
@@ -13,6 +15,14 @@ interface ChatMessage {
   content: string;
   created_at: string;
   tokens?: number;
+}
+
+interface Subscription {
+  id: string;
+  user_id: string;
+  status: 'active' | 'canceled' | 'incomplete' | 'past_due';
+  stripe_subscription_id: string;
+  created_at: string;
 }
 
 // Simple token estimation (can be replaced with a more accurate model)
@@ -29,15 +39,22 @@ export function AIChat() {
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
+  const [hasSubscription, setHasSubscription] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (currentOrganizationId) {
+    if (currentOrganizationId && profile?.id) {
       loadMessages();
       loadSettings();
     }
-  }, [currentOrganizationId]);
+  }, [currentOrganizationId, profile?.id]);
+
+  useEffect(() => {
+    if (appSettings?.enabled && !profile?.is_global_admin) {
+      checkSubscription();
+    }
+  }, [appSettings]);
 
   useEffect(() => {
     scrollToBottom();
@@ -54,26 +71,6 @@ export function AIChat() {
   const loadMessages = async () => {
     if (!currentOrganizationId) return;
 
-
-
-    // try {
-    //   setLoading(true);
-    //   setError(null);
-
-    //   const { data, error: loadError } = await supabase
-    //     .from('chat_messages')
-    //     .select('*')
-    //     .eq('organization_id', currentOrganizationId)
-    //     .order('created_at', { ascending: true });
-
-    //   if (loadError) throw loadError;
-    //   setMessages(data || []);
-    // } catch (err) {
-    //   console.error('Error loading messages:', err);
-    //   setError('Failed to load chat history');
-    // } finally {
-    //   setLoading(false);
-    // }
     try {
       setLoading(true);
       setError(null);
@@ -83,7 +80,7 @@ export function AIChat() {
         ? currentOrganizationId // Use currentOrganizationId for global admins
         : localStorage.getItem('organization_id'); // Use localStorage for non-admins
 
-      console.log("organization id from ai chats:", organizationId)
+      console.log("organization id from ai chats:", organizationId);
 
       if (!organizationId) {
         throw new Error('Organization ID not found');
@@ -125,6 +122,80 @@ export function AIChat() {
     }
   };
 
+  const checkSubscription = async () => {
+    if (!profile?.id) return;
+
+    try {
+      const { data: subscription, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', profile.id)
+        .eq('status', 'active')
+        .single();
+
+      if (error) throw error;
+      setHasSubscription(!!subscription);
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setError('Failed to check subscription status');
+    }
+  };
+
+  // const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
+  // const redirectToCheckout = async (sessionId: string) => {
+  //   const stripe = await stripePromise;
+  //   if (stripe) {
+  //     stripe.redirectToCheckout({ sessionId });
+  //   }
+  // };
+
+  const handleSubscribe = async () => {
+    // Call Supabase Edge Function to create a Stripe Checkout session
+    const { data: productData, error: productError } = await supabase
+      .from('products')
+      .select('stripe_price_id')
+      .eq('name', 'AI-Chat')
+      .single();
+
+    if (productError || !productData) {
+      console.error('Error fetching product from Supabase:', productError?.message);
+      return;
+    }
+
+    const price_id = productData.stripe_price_id;
+    console.log(price_id, 'stripe price id')
+
+    const userID = profile?.id;
+
+    try {
+      // Invoke the Edge Function
+      const { data, error } = await supabase.functions.invoke("stripe-checkout", {
+        body: { user_id: userID, price_id: price_id},
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Redirect the user to the Stripe checkout page
+      window.location.href = data.url;
+      // Redirect the user to Stripe Checkout
+      // redirectToCheckout(data.sessionId);
+    } catch (error) {
+      // console.log(error, 'error')
+      if (error instanceof FunctionsHttpError) {
+        const errorMessage = await error.context.json()
+        console.log('Function returned an error', errorMessage)
+      } else if (error instanceof FunctionsRelayError) {
+        console.log('Relay error:', error.message)
+      } else if (error instanceof FunctionsFetchError) {
+        console.log('Fetch error:', error.message)
+      }
+      alert("Something went wrong. Please try again.");
+    }
+  };
+
   const copyToClipboard = async (text: string, id: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -138,7 +209,7 @@ export function AIChat() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !currentOrganizationId || !appSettings?.enabled) return;
+    if (!input.trim() || !currentOrganizationId || !appSettings?.enabled || !hasSubscription) return;
 
     const userMessage = input.trim();
     setInput('');
@@ -313,6 +384,7 @@ export function AIChat() {
     );
   }
 
+  // If app settings are not enabled, show the disabled message
   if (!appSettings?.enabled) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -329,6 +401,30 @@ export function AIChat() {
     );
   }
 
+  // If app settings are enabled but the user doesn't have a subscription, show the subscription prompt
+  if (!hasSubscription && !profile?.is_global_admin) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+          <AlertCircle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            Subscription Required
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            You need an active subscription to access AI chat features.
+          </p>
+          <button
+            onClick={handleSubscribe}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Subscribe Now
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If app settings are enabled and the user has a subscription, show the chat interface
   return (
     <div className="flex flex-col h-[calc(100vh-10rem)] bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
       {error && (
@@ -371,13 +467,13 @@ export function AIChat() {
                 )}
                 <div
                   className={`flex-1 max-w-2xl ${message.role === 'assistant'
-                      ? 'text-gray-900 dark:text-white'
-                      : 'text-white ml-auto'
+                    ? 'text-gray-900 dark:text-white'
+                    : 'text-white ml-auto'
                     }`}
                 >
                   <div className={`relative rounded-2xl px-4 py-2 mb-8 ${message.role === 'assistant'
-                      ? 'bg-white dark:bg-gray-800'
-                      : 'bg-indigo-600'
+                    ? 'bg-white dark:bg-gray-800'
+                    : 'bg-indigo-600'
                     }`}>
                     <div className="text-sm">
                       {renderMessage(message.content, message.role === 'assistant', message.id)}
