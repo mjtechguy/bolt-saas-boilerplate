@@ -511,7 +511,7 @@ $$;
 CREATE POLICY "Public profiles access"
   ON profiles
   FOR SELECT
-  TO authenticated
+  TO authenticated, ANON
   USING (
   true
   );
