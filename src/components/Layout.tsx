@@ -36,7 +36,7 @@ export function Layout({children}: LayoutProps) {
         return;
       }
 
-      setOrgs(data.length > 0);
+      setOrgs(data.length > 0?true:false);
     };
 
     getUserOrganization();
