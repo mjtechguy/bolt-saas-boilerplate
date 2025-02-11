@@ -312,7 +312,7 @@ export function AIChat() {
           </div>
         </div>
       )}
-
+  
       <div 
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth"
@@ -367,14 +367,15 @@ export function AIChat() {
                         ? 'bg-white dark:bg-gray-800'
                         : 'bg-indigo-600'
                     }`}>
-                    <div className="text-sm">
-                      {renderMessage(message.content)}
+                      <div className="text-sm">
+                        {renderMessage(message.content)}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-end mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    <span>{new Date(message.created_at).toLocaleTimeString()}</span>
-                    <span className="mx-2">•</span>
-                    <span>{message.tokens || estimateTokens(message.content)} tokens</span>
+                    <div className="flex items-center justify-end mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <span>{new Date(message.created_at).toLocaleTimeString()}</span>
+                      <span className="mx-2">•</span>
+                      <span>{message.tokens || estimateTokens(message.content)} tokens</span>
+                    </div>
                   </div>
                 </div>
                 {message.role === 'user' && (
@@ -411,7 +412,7 @@ export function AIChat() {
         )}
         <div ref={messagesEndRef} />
       </div>
-
+  
       <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         {appSettings?.settings.disclaimer_message && messages.length > 0 && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 text-center">
@@ -441,5 +442,4 @@ export function AIChat() {
         </form>
       </div>
     </div>
-  );
-}
+  )};

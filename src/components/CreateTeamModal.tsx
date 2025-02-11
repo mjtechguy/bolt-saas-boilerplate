@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, Upload, Users } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import type { Organization, Profile } from '../lib/types';
+import React, {useState, useEffect} from "react";
+import {X, Upload, Users} from "lucide-react";
+import {supabase} from "../lib/supabase";
+import type {Organization, Profile} from "../lib/types";
 
 interface CreateTeamModalProps {
   isOpen: boolean;
@@ -9,17 +9,23 @@ interface CreateTeamModalProps {
   onSuccess: () => void;
 }
 
-export function CreateTeamModal({ isOpen, onClose, onSuccess }: CreateTeamModalProps) {
+export function CreateTeamModal({
+  isOpen,
+  onClose,
+  onSuccess,
+}: CreateTeamModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [availableUsers, setAvailableUsers] = useState<Profile[]>([]);
   const [form, setForm] = useState({
-    name: '',
-    organizationId: '',
-    adminEmail: '',
-    logo: null as File | null
+    name: "",
+    organizationId: "",
+    adminEmail: "",
+    logo: null as File | null,
   });
+  const [userRole] = useState(localStorage.getItem("userOrgRole"));
+  // const [orgId] = useState(localStorage.getItem("organization_id"));
 
   // Load organizations and users when modal opens
   useEffect(() => {
@@ -31,29 +37,52 @@ export function CreateTeamModal({ isOpen, onClose, onSuccess }: CreateTeamModalP
 
   const loadOrganizations = async () => {
     try {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .order('name');
+      const orgId= localStorage.getItem("organization_id");
+      console.log(orgId,'id')
+      if (userRole == "organization_admin") {
+        // const {data, error} = await supabase
+        //   .from("organizations")
+        //   .select(
+        //     `
+        //           *
 
-      if (error) throw error;
-      setOrganizations(data || []);
+        //         `
+        //   )
+        const {data, error} = await supabase
+          .from("organizations")
+          .select("*")
+          .order("name")
+
+          .eq("id", orgId);
+
+        if (error) throw error;
+
+        setOrganizations(data || []);
+      } else {
+        const {data, error} = await supabase
+          .from("organizations")
+          .select("*")
+          .order("name");
+
+        if (error) throw error;
+        setOrganizations(data || []);
+      }
     } catch (error) {
-      console.error('Error loading organizations:', error);
+      console.error("Error loading organizations:", error);
     }
   };
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('email');
+      const {data, error} = await supabase
+        .from("profiles")
+        .select("*")
+        .order("email");
 
       if (error) throw error;
       setAvailableUsers(data || []);
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error("Error loading users:", error);
     }
   };
 
@@ -64,52 +93,58 @@ export function CreateTeamModal({ isOpen, onClose, onSuccess }: CreateTeamModalP
 
     try {
       if (!form.name.trim()) {
-        throw new Error('Team name is required');
+        throw new Error("Team name is required");
       }
 
       if (!form.organizationId) {
-        throw new Error('Organization is required');
+        throw new Error("Organization is required");
       }
 
       if (!form.adminEmail) {
-        throw new Error('Team admin is required');
+        throw new Error("Team admin is required");
       }
 
       // Create team
-      const slug = form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const { data: team, error: teamError } = await supabase
-        .from('teams')
-        .insert([{
-          name: form.name,
-          slug,
-          organization_id: form.organizationId
-        }])
+      const slug = form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const {data: team, error: teamError} = await supabase
+        .from("teams")
+        .insert([
+          {
+            name: form.name,
+            slug,
+            organization_id: form.organizationId,
+          },
+        ])
         .select()
         .single();
 
       if (teamError) throw teamError;
 
       // Get the admin user's ID
-      const adminUser = availableUsers.find(user => user.email === form.adminEmail);
-      if (!adminUser) throw new Error('Selected admin user not found');
+      const adminUser = availableUsers.find(
+        (user) => user.email === form.adminEmail
+      );
+      if (!adminUser) throw new Error("Selected admin user not found");
 
       // Add admin to team with team_admin role
-      const { error: memberError } = await supabase
-        .from('user_teams')
-        .insert([{
+      const {error: memberError} = await supabase.from("user_teams").insert([
+        {
           user_id: adminUser.id,
           team_id: team.id,
-          role: 'team_admin'
-        }]);
+          role: "team_admin",
+        },
+      ]);
 
       if (memberError) throw memberError;
 
       onSuccess();
       onClose();
-      setForm({ name: '', organizationId: '', adminEmail: '', logo: null });
+      setForm({name: "", organizationId: "", adminEmail: "", logo: null});
     } catch (error) {
-      console.error('Error creating team:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create team');
+      console.error("Error creating team:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to create team"
+      );
     } finally {
       setLoading(false);
     }
@@ -121,7 +156,10 @@ export function CreateTeamModal({ isOpen, onClose, onSuccess }: CreateTeamModalP
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
         {/* Backdrop */}
-        <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose} />
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          onClick={onClose}
+        />
 
         {/* Modal */}
         <div className="relative w-full max-w-md transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 p-6 text-left shadow-xl transition-all">
@@ -148,7 +186,9 @@ export function CreateTeamModal({ isOpen, onClose, onSuccess }: CreateTeamModalP
               </label>
               <select
                 value={form.organizationId}
-                onChange={(e) => setForm({ ...form, organizationId: e.target.value })}
+                onChange={(e) =>
+                  setForm({...form, organizationId: e.target.value})
+                }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">Select an organization</option>
@@ -168,7 +208,7 @@ export function CreateTeamModal({ isOpen, onClose, onSuccess }: CreateTeamModalP
               <input
                 type="text"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => setForm({...form, name: e.target.value})}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 placeholder="Enter team name"
               />
@@ -181,7 +221,7 @@ export function CreateTeamModal({ isOpen, onClose, onSuccess }: CreateTeamModalP
               </label>
               <select
                 value={form.adminEmail}
-                onChange={(e) => setForm({ ...form, adminEmail: e.target.value })}
+                onChange={(e) => setForm({...form, adminEmail: e.target.value})}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">Select an admin</option>
@@ -195,7 +235,9 @@ export function CreateTeamModal({ isOpen, onClose, onSuccess }: CreateTeamModalP
 
             {error && (
               <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-4">
-                <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
+                <p className="text-sm text-red-700 dark:text-red-200">
+                  {error}
+                </p>
               </div>
             )}
 
@@ -212,7 +254,7 @@ export function CreateTeamModal({ isOpen, onClose, onSuccess }: CreateTeamModalP
                 disabled={loading}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
-                {loading ? 'Creating...' : 'Create Team'}
+                {loading ? "Creating..." : "Create Team"}
               </button>
             </div>
           </form>

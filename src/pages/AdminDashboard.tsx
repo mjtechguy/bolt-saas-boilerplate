@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Users, 
-  Building2, 
-  UserCheck, 
-  Clock, 
-  ArrowRight, 
-  Briefcase, 
-  Link as LinkIcon, 
-  MenuSquare, 
-  AppWindow, 
-  RotateCw as ArrowPathIcon, 
-  Home as HomeIcon 
+import {
+  Users,
+  Building2,
+  UserCheck,
+  Clock,
+  ArrowRight,
+  Briefcase,
+  Link as LinkIcon,
+  MenuSquare,
+  AppWindow,
+  RotateCw as ArrowPathIcon,
+  Home as HomeIcon
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useProfile } from '../hooks/useProfile';
@@ -139,17 +139,17 @@ export function AdminDashboard() {
     }
   }
 
-  const StatCard = ({ 
-    title, 
-    value, 
-    icon: Icon, 
+  const StatCard = ({
+    title,
+    value,
+    icon: Icon,
     onClick,
     href,
     color = 'text-indigo-600 dark:text-indigo-400',
     bgColor = 'bg-indigo-100 dark:bg-indigo-900/20'
-  }: { 
-    title: string; 
-    value: number; 
+  }: {
+    title: string;
+    value: number;
     icon: React.ElementType;
     onClick?: () => void;
     href?: string;
@@ -314,7 +314,7 @@ export function AdminDashboard() {
                         {login.display_name || login.email}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Last login: {login.last_sign_in_at 
+                        Last login: {login.last_sign_in_at
                           ? new Date(login.last_sign_in_at).toLocaleString()
                           : 'Never'}
                       </p>
