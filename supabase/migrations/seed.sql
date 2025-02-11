@@ -164,6 +164,17 @@ CREATE TABLE IF NOT EXISTS topbar_links (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
+-- Create subscribtions table
+
+CREATE TABLE IF NOT EXISTS subscribtions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  stripe_subscription_id text,
+  status text,
+  customer_id text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
 -- END
 
 -- Enable Row-Level Security (RLS)
