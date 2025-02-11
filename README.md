@@ -186,6 +186,19 @@ Migrations are automatically applied when connecting to Supabase.
 - Session management
 - Social login security
 
+# Project Setup
+
+## Supabase CLI Setup
+
+### 1. Install Supabase CLI
+- To install Supabase CLI, use one of the following methods:
+
+#### Using npm:
+- npm install -g supabase
+- supabase login
+- STRIPE_SECRET_KEY=sk_live_********
+
+
 ## Contributing
 
 1. Fork the repository
