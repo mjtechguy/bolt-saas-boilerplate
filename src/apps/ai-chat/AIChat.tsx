@@ -258,7 +258,7 @@ export function AIChat() {
       !input.trim() ||
       !currentOrganizationId ||
       !appSettings?.enabled ||
-      !hasSubscription
+      !hasSubscription && !profile?.is_global_admin
     )
       return;
 
