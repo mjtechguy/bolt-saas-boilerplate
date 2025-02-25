@@ -255,10 +255,10 @@ export function AIChat() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (
-      !input.trim() ||
+      (!input.trim() ||
       !currentOrganizationId ||
       !appSettings?.enabled ||
-      !hasSubscription && !profile?.is_global_admin
+      (!hasSubscription && !profile?.is_global_admin))
     )
       return;
 
