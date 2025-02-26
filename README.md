@@ -134,6 +134,7 @@ The project uses Supabase migrations for database management. Migrations are loc
 
 ### Running Migrations
 
+
 Migrations are automatically applied when connecting to Supabase.
 
 ## Project Structure
@@ -174,6 +175,7 @@ Migrations are automatically applied when connecting to Supabase.
 - \`Profile\`: User profile management
 
 ## Security
+
 
 ### Row Level Security (RLS)
 - Organization-level data isolation
