@@ -134,11 +134,6 @@ The project uses Supabase migrations for database management. Migrations are loc
 
 ### Running Migrations
 
-### Retrieving admin credentials from env file
-
-```bash
-node generate-sql.js
-```
 
 Migrations are automatically applied when connecting to Supabase.
 

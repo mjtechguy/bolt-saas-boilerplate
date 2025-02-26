@@ -21,6 +21,4 @@ const sqlContent = sqlTemplate
   .replace('{{VITE_DEFAULT_ADMIN_PASSWORD}}', process.env.VITE_DEFAULT_ADMIN_PASSWORD);
 
 // Write the updated SQL content to a new file
-fs.writeFileSync(`${__dirname}/migrations.sql`, sqlContent);
-
-console.log('SQL file "output.sql" has been generated with environment variables.');
+fs.writeFileSync(`${__dirname}/supabase/seed.sql`, sqlContent);
