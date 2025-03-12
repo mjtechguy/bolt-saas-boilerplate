@@ -5,6 +5,7 @@ A full-featured SaaS starter template built with React, TypeScript, Tailwind CSS
 ## Features
 
 ### Authentication & Authorization
+
 - Email/password authentication
 - Organization-specific social login providers
 - OpenID Connect (OIDC) integration
@@ -13,12 +14,14 @@ A full-featured SaaS starter template built with React, TypeScript, Tailwind CSS
 - Fine-grained permissions system
 
 ### Multi-tenancy
+
 - Organization management
 - Team management within organizations
 - Hierarchical permissions structure
 - Organization-specific settings and branding
 
 ### User Management
+
 - User profiles with avatars
 - Global admin dashboard
 - User invitation system
@@ -26,12 +29,14 @@ A full-featured SaaS starter template built with React, TypeScript, Tailwind CSS
 - Last login tracking
 
 ### Link Management
+
 - Global, organization, and team-specific links
 - Custom link categories
 - Link sharing and access control
 - Logo and metadata support
 
 ### Customization
+
 - Theme customization (light/dark mode)
 - Organization-specific branding
 - Custom navigation links
@@ -39,6 +44,7 @@ A full-featured SaaS starter template built with React, TypeScript, Tailwind CSS
 - Logo management for light/dark themes
 
 ### Developer Features
+
 - TypeScript support
 - Docker configuration for development and production
 - Environment variable management
@@ -49,6 +55,7 @@ A full-featured SaaS starter template built with React, TypeScript, Tailwind CSS
 ## Tech Stack
 
 - **Frontend:**
+
   - React 18
   - TypeScript
   - Tailwind CSS
@@ -56,6 +63,7 @@ A full-featured SaaS starter template built with React, TypeScript, Tailwind CSS
   - Vite
 
 - **Backend:**
+
   - Supabase (PostgreSQL)
   - Row Level Security
   - Real-time subscriptions
@@ -79,6 +87,7 @@ A full-featured SaaS starter template built with React, TypeScript, Tailwind CSS
 ### Environment Setup
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/enterprise-saas-starter.git
    cd enterprise-saas-starter
@@ -95,6 +104,7 @@ A full-featured SaaS starter template built with React, TypeScript, Tailwind CSS
 ### Local Development
 
 1. Install dependencies:
+
    ```bash
    npm install
    ```
@@ -134,7 +144,6 @@ The project uses Supabase migrations for database management. Migrations are loc
 
 ### Running Migrations
 
-
 Migrations are automatically applied when connecting to Supabase.
 
 ## Project Structure
@@ -155,34 +164,39 @@ Migrations are automatically applied when connecting to Supabase.
 ## Key Components
 
 ### Authentication
+
 - \`AuthForm\`: Handles user login and registration
 - \`ProtectedRoute\`: Route protection based on authentication and roles
 
 ### Organization Management
+
 - \`Organizations\`: Organization CRUD operations
 - \`Teams\`: Team management within organizations
 - \`OrganizationAuthSettings\`: Auth provider configuration
 
 ### User Interface
+
 - \`Layout\`: Main application layout
 - \`Sidebar\`: Navigation sidebar
 - \`TopBar\`: Top navigation bar
 - \`PublicTopBar\`: Public landing page navigation
 
 ### Dashboard
+
 - \`AdminDashboard\`: Global admin dashboard
 - \`Dashboard\`: User dashboard
 - \`Profile\`: User profile management
 
 ## Security
 
-
 ### Row Level Security (RLS)
+
 - Organization-level data isolation
 - Team-level access control
 - User-specific data protection
 
 ### Authentication Security
+
 - Password hashing
 - Two-factor authentication
 - Session management
@@ -190,16 +204,20 @@ Migrations are automatically applied when connecting to Supabase.
 
 # Project Setup
 
+## Auto run the migrations in bolt.new
+
+- `npm run migrate`
+
 ## Supabase CLI Setup
 
 ### 1. Install Supabase CLI
+
 - To install Supabase CLI, use one of the following methods:
 
 #### Using npm:
+
 - npm install -g supabase
 - supabase login
-- STRIPE_SECRET_KEY=sk_live_********
-
 
 ## Contributing
 
