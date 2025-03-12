@@ -897,7 +897,7 @@ WHERE
   has_otp_enabled IS NULL;
 -- Insert default admin email setting
 INSERT INTO app_settings (key, value)
-VALUES ('default_admin_email', 'admin@example.com')
+VALUES ('default_admin_email', '{{VITE_DEFAULT_ADMIN_EMAIL}}')
 ON CONFLICT (key) DO UPDATE
 SET value = EXCLUDED.value;
 
@@ -928,8 +928,8 @@ INSERT INTO auth.users (
   gen_random_uuid(),
   'authenticated',
   'authenticated',
-  'admin@example.com',
-  crypt('Admin123!@#', gen_salt('bf')),
+  '{{VITE_DEFAULT_ADMIN_EMAIL}}',
+  crypt('{{VITE_DEFAULT_ADMIN_PASSWORD}}', gen_salt('bf')),
   now(),
   now(),
   now(),
