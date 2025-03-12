@@ -489,16 +489,16 @@ CREATE TRIGGER on_organization_created_apps
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-DO $$
-DECLARE
-  user_record RECORD;
-BEGIN
-  FOR user_record IN SELECT id FROM auth.users
-  LOOP
-    PERFORM ensure_user_organization(user_record.id);
-  END LOOP;
-END;
-$$;
+-- DO $$
+-- DECLARE
+--   user_record RECORD;
+-- BEGIN
+--   FOR user_record IN SELECT id FROM auth.users
+--   LOOP
+--     PERFORM ensure_user_organization(user_record.id);
+--   END LOOP;
+-- END;
+-- $$;
 
 -- Ensure existing organizations have AI settings
 DO $$
@@ -928,8 +928,8 @@ INSERT INTO auth.users (
   gen_random_uuid(),
   'authenticated',
   'authenticated',
-  'admin@example.com',
-  crypt('Admin123!@', gen_salt('bf')),
+  '{{VITE_DEFAULT_ADMIN_EMAIL}}',
+  crypt('{{VITE_DEFAULT_ADMIN_PASSWORD}}', gen_salt('bf')),
   now(),
   now(),
   now(),
