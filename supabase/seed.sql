@@ -489,16 +489,16 @@ CREATE TRIGGER on_organization_created_apps
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
--- DO $$
--- DECLARE
---   user_record RECORD;
--- BEGIN
---   FOR user_record IN SELECT id FROM auth.users
---   LOOP
---     PERFORM ensure_user_organization(user_record.id);
---   END LOOP;
--- END;
--- $$;
+DO $$
+DECLARE
+  user_record RECORD;
+BEGIN
+  FOR user_record IN SELECT id FROM auth.users
+  LOOP
+    PERFORM ensure_user_organization(user_record.id);
+  END LOOP;
+END;
+$$;
 
 -- Ensure existing organizations have AI settings
 DO $$
@@ -897,7 +897,7 @@ WHERE
   has_otp_enabled IS NULL;
 -- Insert default admin email setting
 INSERT INTO app_settings (key, value)
-VALUES ('default_admin_email', 'admin@example.com')
+VALUES ('default_admin_email', '{{VITE_DEFAULT_ADMIN_EMAIL}}')
 ON CONFLICT (key) DO UPDATE
 SET value = EXCLUDED.value;
 
